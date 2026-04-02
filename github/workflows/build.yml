@@ -1,0 +1,72 @@
+name: Build mBlock Desktop (.exe)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download app icon (if not present)
+        shell: pwsh
+        run: |
+          if (-Not (Test-Path "icon.png")) {
+            Invoke-WebRequest -Uri "https://ide.mblock.cc/favicon.ico" -OutFile "icon.ico" -ErrorAction SilentlyContinue
+            if (-Not (Test-Path "icon.png")) {
+              # Create a minimal placeholder icon using Node
+              node -e "
+                const fs = require('fs');
+                // 1x1 transparent PNG (base64)
+                const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+                fs.writeFileSync('icon.png', png);
+              "
+            }
+          }
+
+      - name: Build Windows installer & portable
+        run: npm run build:win
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Windows installer (.exe setup)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mBlock-IDE-Setup-win-x64
+          path: dist/*Setup*.exe
+          retention-days: 30
+
+      - name: Upload Windows portable (.exe)
+        uses: actions/upload-artifact@v4
+        with:
+          name: mBlock-IDE-Portable-win-x64
+          path: dist/*Portable*.exe
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: "mBlock IDE Desktop v${{ github.run_number }}"
+          draft: false
+          prerelease: false
+          files: |
+            dist/*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
