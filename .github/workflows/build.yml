@@ -6,6 +6,9 @@ on:
       - main
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-windows:
     runs-on: windows-latest
@@ -38,18 +41,11 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload Windows installer (.exe setup)
+      - name: Upload all .exe artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: mBlock-IDE-Setup-win-x64
-          path: dist/*Setup*.exe
-          retention-days: 30
-
-      - name: Upload Windows portable (.exe)
-        uses: actions/upload-artifact@v4
-        with:
-          name: mBlock-IDE-Portable-win-x64
-          path: dist/*Portable*.exe
+          name: mBlock-IDE-win-x64
+          path: dist/*.exe
           retention-days: 30
 
       - name: Create GitHub Release
@@ -60,7 +56,6 @@ jobs:
           name: "mBlock IDE Desktop v${{ github.run_number }}"
           draft: false
           prerelease: false
-          files: |
-            dist/*.exe
+          files: dist/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
