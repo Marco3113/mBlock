@@ -18,25 +18,19 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Download app icon (if not present)
         shell: pwsh
         run: |
           if (-Not (Test-Path "icon.png")) {
-            Invoke-WebRequest -Uri "https://ide.mblock.cc/favicon.ico" -OutFile "icon.ico" -ErrorAction SilentlyContinue
-            if (-Not (Test-Path "icon.png")) {
-              # Create a minimal placeholder icon using Node
-              node -e "
-                const fs = require('fs');
-                // 1x1 transparent PNG (base64)
-                const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
-                fs.writeFileSync('icon.png', png);
-              "
-            }
+            node -e "
+              const fs = require('fs');
+              const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+              fs.writeFileSync('icon.png', png);
+            "
           }
 
       - name: Build Windows installer & portable
